@@ -1,0 +1,72 @@
+replicaCount: 2
+
+image:
+  repository: hub.nasajon.in/ana/angularjs-skeleton
+  pullPolicy: Always
+  tag: "{{ TAG }}"
+
+imagePullSecrets:
+  - name: hub-in
+nameOverride: ""
+fullnameOverride: ""
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization,If-None-Match,x-blackfire-query,apikey"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+  - host: angularjsskeleton.ana.nasajon.com.br
+    paths:
+      - path: /
+        pathType: ImplementationSpecific
+  tls:
+    - secretName: angularjs-skeleton-tls
+      hosts:
+        - angularjsskeleton.ana.nasajon.com.br
+
+nodeSelector: {}
+tolerations: []
+
+configMap:
+  data:
+    config.json: |
+      {
+        "routing": {
+          "url": "https://api.meutrabalho.app/fosrouting/js/routing"
+        },
+        "auth": {
+          "url": "https://auth.nasajon.com.br/auth",
+          "realm": "master",
+          "clientId": "meutrabalho_api"
+        },
+        "contaURL": "https://conta.nasajon.com.br",
+      }
+secret:
+  create: true
+  name: "angularjs-skeleton"
+  data:
+    POSTGRES_USER: "anarh_user"
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: node_group
+          operator: In
+          values:
+          - ng-ana
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - angularjs-skeleton
+        topologyKey: kubernetes.io/hostname
